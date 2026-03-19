@@ -1,0 +1,137 @@
+%% ============================================================
+%  DDI Stress Reconstruction for N datasets
+% =============================================================
+
+clear; clc; close all;
+
+%% =========================
+% LOAD DATA
+% =========================
+
+load('synthetic_data.mat');
+for i = 1:numel(synthetic_data)
+    t_data{i} = synthetic_data{i}(:,1);
+    R_data{i} = synthetic_data{i}(:,2);
+end
+
+% Expect:
+% t_data{alpha}
+% R_data{alpha}
+
+N = length(synthetic_data);
+%%
+rho   = 1000;
+Pinf  = 101325;
+gamma = 0.072;
+k     = 1;
+
+sgolay_order  = 3;
+sgolay_window = 21;
+
+n_clusters = 30;
+
+%% Storage
+S_data  = cell(N,1);
+V_data  = cell(N,1);
+pb_data = cell(N,1);
+
+Z_all = [];
+
+%% =========================
+% LOOP OVER EXPERIMENTS
+% =========================
+
+for alpha = 1:N
+    
+    R = R_data{alpha};
+    t = t_data{alpha};
+    
+    dt = t(2) - t(1);
+    
+    % Smooth
+    R_smooth = sgolayfilt(R, sgolay_order, sgolay_window);
+    
+    % Derivatives
+    V = gradient(R_smooth, dt);
+    A = gradient(V, dt);
+    
+    % Inertia
+    inertia = R_smooth .* A + 1.5 .* V.^2;
+    
+    % Raw pressure
+    pb_raw = rho .* inertia + Pinf + 2*gamma ./ R_smooth;
+    
+    % Pressure evolution
+    pb_consistent = zeros(size(R));
+    pb_consistent(1) = pb_raw(1);
+    
+    for n = 2:length(R)
+        rhs = (3*k / R_smooth(n)) * V(n) * pb_consistent(n-1);
+        pb_consistent(n) = pb_consistent(n-1) + dt * rhs;
+    end
+    
+    % Stress reconstruction
+    S = pb_raw - pb_consistent;
+    
+    % Store
+    S_data{alpha}  = S;
+    V_data{alpha}  = V;
+    pb_data{alpha} = pb_consistent;
+    
+    % Stack phase space
+    Z_all = [Z_all; ...
+             R_smooth(:), V(:), S(:)];
+end
+
+%% =========================
+% GLOBAL CLUSTERING
+% =========================
+
+[idx, centroids] = kmeans(Z_all, n_clusters, 'Replicates',5);
+
+%% =========================
+% Visualization
+% =========================
+
+%% =========================
+% Subplot: R(t) + Phase Space Colored by S
+% =========================
+
+figure('Color','w','Position',[100 100 1100 400])
+
+% -------- LEFT: R(t) --------
+subplot(1,2,1)
+hold on
+for alpha = 1:N
+    plot(t_data{alpha}, R_data{alpha}, 'LineWidth',1.2)
+end
+xlabel('Time')
+ylabel('R')
+title('Radius vs Time')
+grid on
+box on
+
+% -------- RIGHT: (R,V) colored by S --------
+subplot(1,2,2)
+
+Rvals = Z_all(:,1);
+Vvals = Z_all(:,2);
+Svals = Z_all(:,3);
+
+% Optional: remove extreme outliers in S for cleaner colormap
+cl = prctile(Svals, [2 98]);
+mask = Svals >= cl(1) & Svals <= cl(2);
+
+scatter(Rvals(mask), Vvals(mask), 10, Svals(mask), 'filled')
+xlabel('R')
+ylabel('V')
+title('Phase Space (R,V) colored by S')
+grid on
+box on
+axis tight
+
+colormap(turbo)
+cb = colorbar;
+cb.Label.String = 'S';
+
+caxis(cl)
