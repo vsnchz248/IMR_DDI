@@ -320,24 +320,6 @@ xlabel('Iteration'); ylabel('Objective  L');
 title('DDI convergence'); grid on; box on;
 
 %% =========================================================================
-%  FIGURE 3: Discovered constitutive cloud (primary DDI result)
-%% =========================================================================
-figure('Name','DDI - Discovered Constitutive Cloud','NumberTitle','off',...
-       'Position',[200 200 900 400]);
-
-subplot(1,2,1);
-scatter(xbar, Fbar, 50, 'r', 'filled', 'MarkerFaceAlpha',0.6);
-xlabel('x (displacement)'); ylabel('F (force)');
-title('Discovered F vs x');
-grid on; box on;
-
-subplot(1,2,2);
-scatter(vbar, Fbar, 50, 'b', 'filled', 'MarkerFaceAlpha',0.6);
-xlabel('v (velocity)'); ylabel('F (force)');
-title('Discovered F vs v');
-grid on; box on;
-
-%% =========================================================================
 %  ERROR SUMMARY
 %% =========================================================================
 fprintf('\n=== Recovery error (window [0,T]) ===\n');
