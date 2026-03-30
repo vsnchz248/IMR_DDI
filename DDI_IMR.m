@@ -1,4 +1,4 @@
-function DDI_IMR_fixed(use_gt_init, validation_mode)
+function DDI_IMR(use_gt_init, validation_mode)
 %DDI_IMR_FIXED  Full joint (R*, V*, S*) DDI via 5N KKT system.
 %
 % CALLS
@@ -152,13 +152,13 @@ fprintf('\n\n');
 %% =========================================================================
 wn_all = ones(Nexp, N);
 
-w_obs_R      = 100.0;
+w_obs_R      = 1.0;
 wR           = 1.0;
-wV           = 0.0;
+wV           = 1.0;
 wS           = 1.0;
-beta_S0      = 10.0;
+beta_S0      = 1.0;
 beta_S1      = 1.0;
-beta_R       = 0.0; %#ok<NASGU>
+beta_R       = 1.0;
 anneal_iters = 50;
 Npts_total   = Nexp*N;
 if validation_mode
@@ -167,7 +167,7 @@ else
     Nbar = min(50*Nexp, Npts_total);
 end
 max_iter = 200;
-tol      = 1e-4;
+tol      = 1e-8;
 max_nr   = 50;
 
 fprintf('  Using Nbar = %d centroids (of %d total samples).\n\n', Nbar, Npts_total);
